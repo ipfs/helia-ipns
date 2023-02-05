@@ -34,6 +34,13 @@ describe('pubsub routing', () => {
       pubsub: gossipsub()
     })
     kubo = await createKuboNode({
+      ipfsOptions: {
+        config: {
+          Routing: {
+            Type: 'none'
+          }
+        }
+      },
       args: ['--enable-pubsub-experiment', '--enable-namesys-pubsub']
     })
 

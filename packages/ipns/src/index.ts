@@ -72,8 +72,6 @@ import { CID } from 'multiformats/cid'
 import { resolveDnslink } from './utils/resolve-dns-link.js'
 import { logger } from '@libp2p/logger'
 import { peerIdFromString } from '@libp2p/peer-id'
-import type { ProgressEvent, ProgressOptions } from '@helia/interface'
-import { CustomProgressEvent } from '@helia/interface'
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import type { Datastore } from 'interface-datastore'
@@ -102,16 +100,7 @@ export interface ResolveOptions extends AbortOptions {
   nocache?: boolean
 }
 
-export type RepublishProgressEvents =
-  ProgressEvent<'republish:start', unknown> |
-  ProgressEvent<'republish:success', IPNSEntry> |
-  ProgressEvent<'republish:error', { record: IPNSEntry, err: Error }>
-
-export type DHTProgressEvents =
-  ProgressEvent<'dht:query', Uint8Array> |
-  ProgressEvent<'dht:error', { record: Uint8Array, err: Error }>
-
-export interface RepublishOptions extends AbortOptions, ProgressOptions<RepublishProgressEvents | DHTProgressEvents> {
+export interface RepublishOptions extends AbortOptions {
   /**
    * The republish interval in ms (default: 24hrs)
    */
@@ -211,17 +200,12 @@ class DefaultIPNS implements IPNS {
       throw new Error('Republish is already running')
     }
 
-    const progress = options.progress ?? (() => {})
-
     options.signal?.addEventListener('abort', () => {
       clearTimeout(this.timeout)
     })
 
     async function republish (): Promise<void> {
       const startTime = Date.now()
-
-      progress(new CustomProgressEvent('republish:start'))
-
       const finishType = Date.now()
       const timeTaken = finishType - startTime
       let nextInterval = DEFAULT_REPUBLISH_INTERVAL_MS - timeTaken
