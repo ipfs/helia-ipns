@@ -2,7 +2,7 @@ name: test & maybe release
 on:
   push:
     branches:
-      - ${{{ github.default_branch }}}
+      - main
   pull_request:
 
 jobs:
