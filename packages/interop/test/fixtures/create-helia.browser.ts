@@ -39,11 +39,6 @@ export async function createHeliaNode (): Promise<Helia> {
     }),
     pubsub: gossipsub(),
     datastore,
-    identify: {
-      host: {
-        agentVersion: 'helia/0.0.0'
-      }
-    },
     nat: {
       enabled: false
     },
