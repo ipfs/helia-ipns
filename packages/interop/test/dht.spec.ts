@@ -20,6 +20,7 @@ import { sortClosestPeers } from './fixtures/create-peer-ids.js'
 import type { PeerId } from 'kubo-rpc-client/dist/src/types.js'
 import { concat as uint8ArrayConcat } from 'uint8arrays/concat'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
+import { waitFor } from './fixtures/wait-for.js'
 
 describe('dht routing', () => {
   let helia: Helia
@@ -54,7 +55,7 @@ describe('dht routing', () => {
     })
     kubo = await createKuboNode()
 
-    // find a PeerId that when used as an IPNS key is KAD-close to the resolver
+    // find a PeerId that is KAD-closer to the resolver than the publisher when used as an IPNS key
     while (true) {
       key = await createEd25519PeerId()
       const routingKey = uint8ArrayConcat([
@@ -87,6 +88,38 @@ describe('dht routing', () => {
       } catch { }
     }
     expect(connected).to.be.true()
+
+    await waitFor(async () => {
+      let found = false
+
+      for await (const event of helia.libp2p.dht.findPeer(kubo.peer.id)) {
+        if (event.name === 'FINAL_PEER') {
+          found = true
+        }
+      }
+
+      return found
+    }, {
+      timeout: 30000,
+      delay: 1000,
+      message: 'Helia could not find Kubo on the DHT'
+    })
+
+    await waitFor(async () => {
+      let found = false
+
+      for await (const event of kubo.api.dht.findPeer(helia.libp2p.peerId)) {
+        if (event.name === 'FINAL_PEER') {
+          found = true
+        }
+      }
+
+      return found
+    }, {
+      timeout: 30000,
+      delay: 1000,
+      message: 'Kubo could not find Helia on the DHT'
+    })
 
     name = ipns(helia, [
       dht(helia)
