@@ -21,6 +21,7 @@ import type { PeerId } from 'kubo-rpc-client/dist/src/types.js'
 import { concat as uint8ArrayConcat } from 'uint8arrays/concat'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { waitFor } from './fixtures/wait-for.js'
+import { connect } from './fixtures/connect.js'
 
 describe('dht routing', () => {
   let helia: Helia
@@ -79,15 +80,7 @@ describe('dht routing', () => {
 
     // connect the two nodes over the KAD-DHT protocol, this should ensure
     // both nodes have each other in their KAD buckets
-    let connected = false
-    for (const addr of kubo.peer.addresses) {
-      try {
-        await helia.libp2p.dialProtocol(addr, '/ipfs/lan/kad/1.0.0')
-        connected = true
-        break
-      } catch { }
-    }
-    expect(connected).to.be.true()
+    await connect(helia, kubo, '/ipfs/lan/kad/1.0.0')
 
     await waitFor(async () => {
       let found = false

@@ -20,6 +20,7 @@ import { waitFor } from './fixtures/wait-for.js'
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { concat as uint8ArrayConcat } from 'uint8arrays/concat'
+import { connect } from './fixtures/connect.js'
 
 const LIBP2P_KEY_CODEC = 0x72
 
@@ -36,18 +37,8 @@ describe('pubsub routing', () => {
       args: ['--enable-pubsub-experiment', '--enable-namesys-pubsub']
     })
 
-    // connect the two nodes - serial dial seems more stable?
-    // connect the two nodes over the KAD-DHT protocol, this should ensure
-    // both nodes have each other in their KAD buckets
-    let connected = false
-    for (const addr of kubo.peer.addresses) {
-      try {
-        await helia.libp2p.dialProtocol(addr, '/meshsub/1.1.0')
-        connected = true
-        break
-      } catch { }
-    }
-    expect(connected).to.be.true()
+    // connect the two nodes
+    await connect(helia, kubo, '/meshsub/1.1.0')
 
     name = ipns(helia, [
       pubsub(helia)
