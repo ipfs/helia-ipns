@@ -22,6 +22,7 @@ import { concat as uint8ArrayConcat } from 'uint8arrays/concat'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { waitFor } from './fixtures/wait-for.js'
 import { connect } from './fixtures/connect.js'
+import { isElectronMain } from 'wherearewe'
 
 describe('dht routing', () => {
   let helia: Helia
@@ -146,7 +147,13 @@ describe('dht routing', () => {
     expect(resolved).to.equal(`/ipfs/${value.toString()}`)
   })
 
-  it('should publish on kubo and resolve on helia', async () => {
+  it('should publish on kubo and resolve on helia', async function () {
+    if (isElectronMain) {
+      // electron main does not have fetch, FormData or Blob APIs
+      // can revisit when kubo-rpc-client supports the key.import API
+      return this.skip()
+    }
+
     await createNodes('helia')
 
     const keyName = 'my-ipns-key'
