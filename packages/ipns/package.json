@@ -173,12 +173,14 @@
     "is-ipfs": "^8.0.1",
     "multiformats": "^11.0.1",
     "p-queue": "^7.3.0",
+    "progress-events": "^1.0.0",
     "uint8arrays": "^4.0.3"
   },
   "devDependencies": {
     "@libp2p/peer-id-factory": "^2.0.1",
     "aegir": "^38.1.0",
-    "datastore-core": "^8.0.4"
+    "datastore-core": "^8.0.4",
+    "sinon": "^15.0.1"
   },
   "browser": {
     "./dist/src/utils/resolve-dns-link.js": "./dist/src/utils/resolve-dns-link.browser.js"

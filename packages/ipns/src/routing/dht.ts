@@ -1,7 +1,8 @@
 import { logger } from '@libp2p/logger'
 import type { IPNSRouting } from '../index.js'
 import type { DHT, QueryEvent } from '@libp2p/interface-dht'
-import type { AbortOptions } from '@libp2p/interfaces'
+import type { GetOptions, PutOptions } from './index.js'
+import { CustomProgressEvent, ProgressEvent } from 'progress-events'
 
 const log = logger('helia:ipns:routing:dht')
 
@@ -11,6 +12,10 @@ export interface DHTRoutingComponents {
   }
 }
 
+export type DHTProgressEvents =
+  ProgressEvent<'ipns:routing:dht:query', QueryEvent> |
+  ProgressEvent<'ipns:routing:dht:error', Error>
+
 export class DHTRouting implements IPNSRouting {
   private readonly dht: DHT
 
@@ -18,15 +23,21 @@ export class DHTRouting implements IPNSRouting {
     this.dht = components.libp2p.dht
   }
 
-  async put (routingKey: Uint8Array, marshaledRecord: Uint8Array, options: AbortOptions = {}): Promise<void> {
+  async put (routingKey: Uint8Array, marshaledRecord: Uint8Array, options: PutOptions = {}): Promise<void> {
     let putValue = false
 
-    for await (const event of this.dht.put(routingKey, marshaledRecord, options)) {
-      logEvent('DHT put event', event)
+    try {
+      for await (const event of this.dht.put(routingKey, marshaledRecord, options)) {
+        logEvent('DHT put event', event)
 
-      if (event.name === 'PEER_RESPONSE' && event.messageName === 'PUT_VALUE') {
-        putValue = true
+        options.onProgress?.(new CustomProgressEvent<QueryEvent>('ipns:routing:dht:query', event))
+
+        if (event.name === 'PEER_RESPONSE' && event.messageName === 'PUT_VALUE') {
+          putValue = true
+        }
       }
+    } catch (err: any) {
+      options.onProgress?.(new CustomProgressEvent<Error>('ipns:routing:dht:error', err))
     }
 
     if (!putValue) {
@@ -34,13 +45,19 @@ export class DHTRouting implements IPNSRouting {
     }
   }
 
-  async get (routingKey: Uint8Array, options: AbortOptions = {}): Promise<Uint8Array> {
-    for await (const event of this.dht.get(routingKey, options)) {
-      logEvent('DHT get event', event)
+  async get (routingKey: Uint8Array, options: GetOptions = {}): Promise<Uint8Array> {
+    try {
+      for await (const event of this.dht.get(routingKey, options)) {
+        logEvent('DHT get event', event)
 
-      if (event.name === 'VALUE') {
-        return event.value
+        options.onProgress?.(new CustomProgressEvent<QueryEvent>('ipns:routing:dht:query', event))
+
+        if (event.name === 'VALUE') {
+          return event.value
+        }
       }
+    } catch (err: any) {
+      options.onProgress?.(new CustomProgressEvent<Error>('ipns:routing:dht:error', err))
     }
 
     throw new Error('Not found')

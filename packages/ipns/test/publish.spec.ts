@@ -6,6 +6,7 @@ import type { IPNS } from '../src/index.js'
 import { ipns } from '../src/index.js'
 import { CID } from 'multiformats/cid'
 import { createEd25519PeerId } from '@libp2p/peer-id-factory'
+import Sinon from 'sinon'
 
 const cid = CID.parse('QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn')
 
@@ -35,5 +36,15 @@ describe('publish', () => {
 
     expect(ipnsEntry).to.have.property('sequence', 1n)
     expect(ipnsEntry).to.have.property('ttl', BigInt(lifetime) * 100000n)
+  })
+
+  it('should emit progress events', async function () {
+    const key = await createEd25519PeerId()
+    const onProgress = Sinon.stub()
+    await name.publish(key, cid, {
+      onProgress
+    })
+
+    expect(onProgress).to.have.property('called', true)
   })
 })

@@ -3,15 +3,15 @@ import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { logger } from '@libp2p/logger'
 import type { PeerId } from '@libp2p/interface-peer-id'
-import type { Message, PubSub } from '@libp2p/interface-pubsub'
+import type { Message, PublishResult, PubSub } from '@libp2p/interface-pubsub'
 import type { Datastore } from 'interface-datastore'
-import type { AbortOptions } from '@libp2p/interfaces'
-import type { IPNSRouting } from './index.js'
+import type { GetOptions, IPNSRouting, PutOptions } from './index.js'
 import { CodeError } from '@libp2p/interfaces/errors'
-import { localStore, LocalStore } from '../utils/local-store.js'
+import { localStore, LocalStore } from './local-store.js'
 import { ipnsValidator } from 'ipns/validator'
 import { ipnsSelector } from 'ipns/selector'
 import { equals as uint8ArrayEquals } from 'uint8arrays/equals'
+import { CustomProgressEvent, ProgressEvent } from 'progress-events'
 
 const log = logger('helia:ipns:routing:pubsub')
 
@@ -22,6 +22,11 @@ export interface PubsubRoutingComponents {
     pubsub: PubSub
   }
 }
+
+export type PubSubProgressEvents =
+  ProgressEvent<'ipns:pubsub:publish', { topic: string, result: PublishResult }> |
+  ProgressEvent<'ipns:pubsub:subscribe', { topic: string }> |
+  ProgressEvent<'ipns:pubsub:error', Error>
 
 /**
  * This IPNS routing receives IPNS record updates via dedicated
@@ -96,14 +101,19 @@ class PubSubRouting implements IPNSRouting {
   /**
    * Put a value to the pubsub datastore indexed by the received key properly encoded
    */
-  async put (routingKey: Uint8Array, marshaledRecord: Uint8Array, options?: AbortOptions): Promise<void> {
-    const topic = keyToTopic(routingKey)
+  async put (routingKey: Uint8Array, marshaledRecord: Uint8Array, options: PutOptions = {}): Promise<void> {
+    try {
+      const topic = keyToTopic(routingKey)
 
-    log('publish value for topic %s', topic)
+      log('publish value for topic %s', topic)
+      const result = await this.pubsub.publish(topic, marshaledRecord)
 
-    const result = await this.pubsub.publish(topic, marshaledRecord)
-
-    log('published record on topic %s to %d recipients', topic, result.recipients)
+      log('published record on topic %s to %d recipients', topic, result.recipients)
+      options.onProgress?.(new CustomProgressEvent('ipns:pubsub:publish', { topic, result }))
+    } catch (err: any) {
+      options.onProgress?.(new CustomProgressEvent<Error>('ipns:pubsub:error', err))
+      throw err
+    }
   }
 
   /**
@@ -111,18 +121,25 @@ class PubSubRouting implements IPNSRouting {
    * Also, the identifier topic is subscribed to and the pubsub datastore records will be
    * updated once new publishes occur
    */
-  async get (routingKey: Uint8Array, options: AbortOptions = {}): Promise<Uint8Array> {
-    const topic = keyToTopic(routingKey)
+  async get (routingKey: Uint8Array, options: GetOptions = {}): Promise<Uint8Array> {
+    try {
+      const topic = keyToTopic(routingKey)
 
-    // ensure we are subscribed to topic
-    if (!this.pubsub.getTopics().includes(topic)) {
-      log('add subscription for topic', topic)
-      this.pubsub.subscribe(topic)
-      this.subscriptions.push(topic)
+      // ensure we are subscribed to topic
+      if (!this.pubsub.getTopics().includes(topic)) {
+        log('add subscription for topic', topic)
+        this.pubsub.subscribe(topic)
+        this.subscriptions.push(topic)
+
+        options.onProgress?.(new CustomProgressEvent('ipns:pubsub:subscribe', { topic }))
+      }
+
+      // chain through to local store
+      return await this.localStore.get(routingKey, options)
+    } catch (err: any) {
+      options.onProgress?.(new CustomProgressEvent<Error>('ipns:pubsub:error', err))
+      throw err
     }
-
-    // chain through to local store
-    return await this.localStore.get(routingKey, options)
   }
 
   /**

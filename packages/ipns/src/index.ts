@@ -66,17 +66,18 @@ import type { AbortOptions } from '@libp2p/interfaces'
 import { isPeerId, PeerId } from '@libp2p/interface-peer-id'
 import { create, marshal, peerIdToRoutingKey, unmarshal } from 'ipns'
 import type { IPNSEntry } from 'ipns'
-import type { IPNSRouting } from './routing/index.js'
+import type { IPNSRouting, IPNSRoutingEvents } from './routing/index.js'
 import { ipnsValidator } from 'ipns/validator'
 import { CID } from 'multiformats/cid'
 import { resolveDnslink } from './utils/resolve-dns-link.js'
 import { logger } from '@libp2p/logger'
 import { peerIdFromString } from '@libp2p/peer-id'
+import type { ProgressEvent, ProgressOptions } from 'progress-events'
+import { CustomProgressEvent } from 'progress-events'
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import type { Datastore } from 'interface-datastore'
-import { localStore } from './utils/local-store.js'
-import type { LocalStore } from './utils/local-store.js'
+import { localStore, LocalStore } from './routing/local-store.js'
 
 const log = logger('helia:ipns')
 
@@ -86,21 +87,36 @@ const HOUR = 60 * MINUTE
 const DEFAULT_LIFETIME_MS = 24 * HOUR
 const DEFAULT_REPUBLISH_INTERVAL_MS = 23 * HOUR
 
-export interface PublishOptions extends AbortOptions {
+export type PublishProgressEvents =
+  ProgressEvent<'ipns:publish:start'> |
+  ProgressEvent<'ipns:publish:success', IPNSEntry> |
+  ProgressEvent<'ipns:publish:error', Error>
+
+export type ResolveProgressEvents =
+  ProgressEvent<'ipns:resolve:start', unknown> |
+  ProgressEvent<'ipns:resolve:success', IPNSEntry> |
+  ProgressEvent<'ipns:resolve:error', Error>
+
+export type RepublishProgressEvents =
+  ProgressEvent<'ipns:republish:start', unknown> |
+  ProgressEvent<'ipns:republish:success', IPNSEntry> |
+  ProgressEvent<'ipns:republish:error', { record: IPNSEntry, err: Error }>
+
+export interface PublishOptions extends AbortOptions, ProgressOptions<PublishProgressEvents | IPNSRoutingEvents> {
   /**
    * Time duration of the record in ms
    */
   lifetime?: number
 }
 
-export interface ResolveOptions extends AbortOptions {
+export interface ResolveOptions extends AbortOptions, ProgressOptions<ResolveProgressEvents | IPNSRoutingEvents> {
   /**
    * do not use cached entries
    */
   nocache?: boolean
 }
 
-export interface RepublishOptions extends AbortOptions {
+export interface RepublishOptions extends AbortOptions, ProgressOptions<RepublishProgressEvents | IPNSRoutingEvents> {
   /**
    * The republish interval in ms (default: 24hrs)
    */
@@ -149,36 +165,41 @@ class DefaultIPNS implements IPNS {
   }
 
   async publish (key: PeerId, value: CID | PeerId, options: PublishOptions = {}): Promise<IPNSEntry> {
-    let sequenceNumber = 1n
-    const routingKey = peerIdToRoutingKey(key)
+    try {
+      let sequenceNumber = 1n
+      const routingKey = peerIdToRoutingKey(key)
 
-    if (await this.localStore.has(routingKey, options)) {
-      // if we have published under this key before, increment the sequence number
-      const buf = await this.localStore.get(routingKey, options)
-      const existingRecord = unmarshal(buf)
-      sequenceNumber = existingRecord.sequence + 1n
+      if (await this.localStore.has(routingKey, options)) {
+        // if we have published under this key before, increment the sequence number
+        const buf = await this.localStore.get(routingKey, options)
+        const existingRecord = unmarshal(buf)
+        sequenceNumber = existingRecord.sequence + 1n
+      }
+
+      let str
+
+      if (isPeerId(value)) {
+        str = `/ipns/${value.toString()}`
+      } else {
+        str = `/ipfs/${value.toString()}`
+      }
+
+      const bytes = uint8ArrayFromString(str)
+
+      // create record
+      const record = await create(key, bytes, sequenceNumber, options.lifetime ?? DEFAULT_LIFETIME_MS)
+      const marshaledRecord = marshal(record)
+
+      await this.localStore.put(routingKey, marshaledRecord, options)
+
+      // publish record to routing
+      await Promise.all(this.routers.map(async r => { await r.put(routingKey, marshaledRecord, options) }))
+
+      return record
+    } catch (err: any) {
+      options.onProgress?.(new CustomProgressEvent<Error>('ipns:publish:error', err))
+      throw err
     }
-
-    let str
-
-    if (isPeerId(value)) {
-      str = `/ipns/${value.toString()}`
-    } else {
-      str = `/ipfs/${value.toString()}`
-    }
-
-    const bytes = uint8ArrayFromString(str)
-
-    // create record
-    const record = await create(key, bytes, sequenceNumber, options.lifetime ?? DEFAULT_LIFETIME_MS)
-    const marshaledRecord = marshal(record)
-
-    await this.localStore.put(routingKey, marshaledRecord, options)
-
-    // publish record to routing
-    await Promise.all(this.routers.map(async r => { await r.put(routingKey, marshaledRecord, options) }))
-
-    return record
   }
 
   async resolve (key: PeerId, options: ResolveOptions = {}): Promise<CID> {
@@ -206,6 +227,9 @@ class DefaultIPNS implements IPNS {
 
     async function republish (): Promise<void> {
       const startTime = Date.now()
+
+      options.onProgress?.(new CustomProgressEvent('ipns:republish:start'))
+
       const finishType = Date.now()
       const timeTaken = finishType - startTime
       let nextInterval = DEFAULT_REPUBLISH_INTERVAL_MS - timeTaken
