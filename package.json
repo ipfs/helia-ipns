@@ -39,7 +39,8 @@
     "release": "npm run docs:no-publish && aegir run release && npm run docs"
   },
   "devDependencies": {
-    "aegir": "^38.1.0"
+    "aegir": "^38.1.0",
+    "sinon-ts": "^1.0.0"
   },
   "type": "module",
   "workspaces": [
