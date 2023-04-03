@@ -72,7 +72,7 @@
     "ipns": "^6.0.0",
     "it-all": "^2.0.0",
     "it-last": "^2.0.0",
-    "it-map": "^2.0.0",
+    "it-map": "^3.0.2",
     "kubo-rpc-client": "^3.0.0",
     "libp2p": "^0.43.2",
     "merge-options": "^3.0.4",
