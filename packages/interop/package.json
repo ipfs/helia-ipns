@@ -61,7 +61,7 @@
     "@libp2p/kad-dht": "^8.0.0",
     "@libp2p/peer-id": "^2.0.1",
     "@libp2p/peer-id-factory": "^2.0.1",
-    "@libp2p/tcp": "^6.1.2",
+    "@libp2p/tcp": "^7.0.1",
     "@libp2p/websockets": "^5.0.3",
     "aegir": "^38.1.0",
     "blockstore-core": "^4.0.1",
