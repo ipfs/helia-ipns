@@ -54,7 +54,7 @@
   "devDependencies": {
     "@chainsafe/libp2p-gossipsub": "^6.1.0",
     "@chainsafe/libp2p-noise": "^11.0.0",
-    "@chainsafe/libp2p-yamux": "^3.0.5",
+    "@chainsafe/libp2p-yamux": "^4.0.2",
     "@helia/interface": "^1.0.0",
     "@helia/ipns": "^1.0.0",
     "@libp2p/interface-peer-id": "^2.0.1",
