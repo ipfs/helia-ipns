@@ -53,12 +53,54 @@
  * @example
  *
  * ```typescript
- * // resolve a CID from a TXT record in a DNS zone file, eg:
- * // > dig ipfs.io TXT
+ * // resolve a CID from a TXT record in a DNS zone file, using the default
+ * // resolver for the current platform eg:
+ * // > dig _dnslink.ipfs.io TXT
  * // ;; ANSWER SECTION:
- * // ipfs.io.           435     IN      TXT     "dnslink=/ipfs/Qmfoo"
+ * // _dnslink.ipfs.io.          60     IN      TXT     "dnslink=/ipns/website.ipfs.io"
+ * // > dig _dnslink.website.ipfs.io TXT
+ * // ;; ANSWER SECTION:
+ * // _dnslink.website.ipfs.io.  60     IN      TXT     "dnslink=/ipfs/QmWebsite"
  *
  * const cid = name.resolveDns('ipfs.io')
+ *
+ * console.info(cid)
+ * // QmWebsite
+ * ```
+ *
+ * @example
+ *
+ * This example uses the Mozilla provided RFC 1035 DNS over HTTPS service. This
+ * uses binary DNS records so requires extra dependencies to process the
+ * response which can increase browser bundle sizes.
+ *
+ * If this is a concern, use the DNS-JSON-Over-HTTPS resolver instead.
+ *
+ * ```typescript
+ * // use DNS-Over-HTTPS
+ * import { dnsOverHttps } from '@helia/ipns/dns-resolvers'
+ *
+ * const cid = name.resolveDns('ipfs.io', {
+ *   resolvers: [
+ *     dnsOverHttps('https://mozilla.cloudflare-dns.com/dns-query')
+ *   ]
+ * })
+ * ```
+ *
+ * @example
+ *
+ * DNS-JSON-Over-HTTPS resolvers are non-standard but can result in a
+ * smaller browser bundle due to the response being plain JSON.
+ *
+ * ```typescript
+ * // use DNS-JSON-Over-HTTPS
+ * import { dnsJsonOverHttps } from '@helia/ipns/dns-resolvers'
+ *
+ * const cid = name.resolveDns('ipfs.io', {
+ *   resolvers: [
+ *     dnsJsonOverHttps('https://mozilla.cloudflare-dns.com/dns-query')
+ *   ]
+ * })
  * ```
  */
 
@@ -73,9 +115,10 @@ import { CID } from 'multiformats/cid'
 import { CustomProgressEvent } from 'progress-events'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
+import { defaultResolver } from './dns-resolvers/default.js'
 import { localStore, type LocalStore } from './routing/local-store.js'
-import { resolveDnslink } from './utils/resolve-dns-link.js'
 import type { IPNSRouting, IPNSRoutingEvents } from './routing/index.js'
+import type { DNSResponse } from './utils/dns.js'
 import type { AbortOptions } from '@libp2p/interfaces'
 import type { Datastore } from 'interface-datastore'
 import type { IPNSEntry } from 'ipns'
@@ -104,6 +147,11 @@ export type RepublishProgressEvents =
   ProgressEvent<'ipns:republish:success', IPNSEntry> |
   ProgressEvent<'ipns:republish:error', { record: IPNSEntry, err: Error }>
 
+export type ResolveDnsLinkProgressEvents =
+  ProgressEvent<'dnslink:cache', string> |
+  ProgressEvent<'dnslink:query', string> |
+  ProgressEvent<'dnslink:answer', DNSResponse>
+
 export interface PublishOptions extends AbortOptions, ProgressOptions<PublishProgressEvents | IPNSRoutingEvents> {
   /**
    * Time duration of the record in ms (default: 24hrs)
@@ -123,11 +171,28 @@ export interface ResolveOptions extends AbortOptions, ProgressOptions<ResolvePro
   offline?: boolean
 }
 
-export interface ResolveDNSOptions extends ResolveOptions {
+export interface ResolveDnsLinkOptions extends AbortOptions, ProgressOptions<ResolveDnsLinkProgressEvents> {
   /**
    * Do not use cached DNS entries (default: false)
    */
   nocache?: boolean
+}
+
+export interface DNSResolver {
+  (domain: string, options?: ResolveDnsLinkOptions): Promise<string>
+}
+
+export interface ResolveDNSOptions extends AbortOptions, ProgressOptions<ResolveDnsLinkProgressEvents> {
+  /**
+   * Do not use cached DNS entries (default: false)
+   */
+  nocache?: boolean
+
+  /**
+   * These resolvers will be used to resolve the dnslink entries, if unspecified node will
+   * fall back to the `dns` module and browsers fall back to querying ipfs.io
+   */
+  resolvers?: DNSResolver[]
 }
 
 export interface RepublishOptions extends AbortOptions, ProgressOptions<RepublishProgressEvents | IPNSRoutingEvents> {
@@ -227,7 +292,13 @@ class DefaultIPNS implements IPNS {
   }
 
   async resolveDns (domain: string, options: ResolveDNSOptions = {}): Promise<CID> {
-    const dnslink = await resolveDnslink(domain, options)
+    const resolvers = options.resolvers ?? [
+      defaultResolver()
+    ]
+
+    const dnslink = await Promise.any(
+      resolvers.map(async resolver => resolver(domain, options))
+    )
 
     return this.#resolve(dnslink, options)
   }
@@ -268,7 +339,7 @@ class DefaultIPNS implements IPNS {
     }, options.interval ?? DEFAULT_REPUBLISH_INTERVAL_MS)
   }
 
-  async #resolve (ipfsPath: string, options: ResolveOptions = {}): Promise<CID> {
+  async #resolve (ipfsPath: string, options: any = {}): Promise<CID> {
     const parts = ipfsPath.split('/')
 
     if (parts.length === 3) {
