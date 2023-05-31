@@ -61,6 +61,8 @@ export function defaultResolver (): DNSResolver {
         cache.set(query, response, ttl)
 
         return response
+      }, {
+        signal: options.signal
       })
 
       if (response == null) {

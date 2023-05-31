@@ -73,6 +73,8 @@ export function dnsJsonOverHttps (url: string): DNSResolver {
       cache.set(query, result, findTTL(fqdn, json) ?? ttl)
 
       return result
+    }, {
+      signal: options.signal
     })
 
     if (response == null) {
