@@ -12,8 +12,7 @@ const cache = new TLRU<string>(1000)
 const ttl = 60 * 1000
 
 /**
- * Uses the non-standard but easier to use 'application/dns-json' content-type
- * to resolve DNS queries.
+ * Uses the RFC 8427 'application/dns-json' content-type to resolve DNS queries.
  *
  * Supports and server that uses the same schema as Google's DNS over HTTPS
  * resolver.
@@ -25,6 +24,7 @@ const ttl = 60 * 1000
  * @see https://developers.cloudflare.com/1.1.1.1/encryption/dns-over-https/make-api-requests/dns-json/
  * @see https://github.com/curl/curl/wiki/DNS-over-HTTPS#publicly-available-servers
  * @see https://dnsprivacy.org/public_resolvers/
+ * @see https://datatracker.ietf.org/doc/html/rfc8427
  */
 export function dnsJsonOverHttps (url: string): DNSResolver {
   // browsers limit concurrent connections per host,

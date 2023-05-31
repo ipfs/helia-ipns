@@ -89,8 +89,8 @@
  *
  * @example
  *
- * DNS-JSON-Over-HTTPS resolvers are non-standard but can result in a
- * smaller browser bundle due to the response being plain JSON.
+ * DNS-JSON-Over-HTTPS resolvers use the RFC 8427 `application/dns-json` and can
+ * result in a smaller browser bundle due to the response being plain JSON.
  *
  * ```typescript
  * // use DNS-JSON-Over-HTTPS
