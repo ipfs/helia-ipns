@@ -14,10 +14,6 @@
   "keywords": [
     "IPFS"
   ],
-  "engines": {
-    "node": ">=16.0.0",
-    "npm": ">=7.0.0"
-  },
   "type": "module",
   "types": "./dist/src/index.d.ts",
   "files": [
@@ -86,8 +82,5 @@
     "./dist/test/fixtures/create-helia.js": "./dist/test/fixtures/create-helia.browser.js",
     "go-ipfs": false
   },
-  "private": true,
-  "typedoc": {
-    "entryPoint": "./src/index.ts"
-  }
+  "private": true
 }
