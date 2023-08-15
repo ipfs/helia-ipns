@@ -76,7 +76,7 @@
     "it-last": "^3.0.1",
     "it-map": "^3.0.3",
     "kubo-rpc-client": "^3.0.0",
-    "libp2p": "^0.45.3",
+    "libp2p": "^0.46.4",
     "merge-options": "^3.0.4",
     "multiformats": "^11.0.1",
     "uint8arrays": "^4.0.3",
