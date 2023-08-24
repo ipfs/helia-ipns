@@ -172,7 +172,7 @@
     "uint8arrays": "^4.0.3"
   },
   "devDependencies": {
-    "@libp2p/peer-id-factory": "^2.0.1",
+    "@libp2p/peer-id-factory": "^3.0.3",
     "aegir": "^40.0.8",
     "datastore-core": "^9.0.3",
     "sinon": "^15.0.1",
