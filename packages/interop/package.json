@@ -56,7 +56,7 @@
     "@libp2p/interface-libp2p": "^3.2.0",
     "@libp2p/interface-peer-id": "^2.0.1",
     "@libp2p/interface-pubsub": "^4.0.1",
-    "@libp2p/kad-dht": "^9.3.4",
+    "@libp2p/kad-dht": "^10.0.6",
     "@libp2p/peer-id": "^2.0.1",
     "@libp2p/peer-id-factory": "^2.0.1",
     "@libp2p/tcp": "^7.0.1",
