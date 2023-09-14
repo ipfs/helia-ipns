@@ -1,3 +1,23 @@
+## [@helia/ipns-v1.1.5](https://github.com/ipfs/helia-ipns/compare/@helia/ipns-v1.1.4...@helia/ipns-v1.1.5) (2023-09-11)
+
+
+### Dependencies
+
+* bump @libp2p/logger from 2.1.1 to 3.0.2 ([#87](https://github.com/ipfs/helia-ipns/issues/87)) ([b2886b9](https://github.com/ipfs/helia-ipns/commit/b2886b9598a66a31c69ee0c3c7e13748614be37e))
+
+## [@helia/ipns-v1.1.4](https://github.com/ipfs/helia-ipns/compare/@helia/ipns-v1.1.3...@helia/ipns-v1.1.4) (2023-09-11)
+
+
+### Trivial Changes
+
+* update project config ([#99](https://github.com/ipfs/helia-ipns/issues/99)) ([a704fdc](https://github.com/ipfs/helia-ipns/commit/a704fdcbe8507ea97065f40525f0bbc251b57a4d))
+
+
+### Dependencies
+
+* bump multiformats from 11.0.2 to 12.0.1 ([#57](https://github.com/ipfs/helia-ipns/issues/57)) ([6f93e51](https://github.com/ipfs/helia-ipns/commit/6f93e51e9b6f603f7c1d396705dc5b190108fe79))
+* **dev:** bump aegir from 39.0.13 to 40.0.8 ([#65](https://github.com/ipfs/helia-ipns/issues/65)) ([174987b](https://github.com/ipfs/helia-ipns/commit/174987b2817cfe99cbabb9835dd6a2d99c1c35a9))
+
 ## [@helia/ipns-v1.1.3](https://github.com/ipfs/helia-ipns/compare/@helia/ipns-v1.1.2...@helia/ipns-v1.1.3) (2023-05-24)
 
 
