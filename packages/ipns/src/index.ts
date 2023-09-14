@@ -62,8 +62,8 @@
  * ```
  */
 
-import { isPeerId, type PeerId } from '@libp2p/interface/peer-id'
 import { CodeError } from '@libp2p/interface/errors'
+import { isPeerId, type PeerId } from '@libp2p/interface/peer-id'
 import { logger } from '@libp2p/logger'
 import { peerIdFromString } from '@libp2p/peer-id'
 import { create, marshal, peerIdToRoutingKey, unmarshal } from 'ipns'
