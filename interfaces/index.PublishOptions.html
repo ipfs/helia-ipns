@@ -24,7 +24,7 @@
 <ul class="tsd-hierarchy">
 <li><span class="target">PublishOptions</span></li></ul></li></ul></section><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/ipfs/helia-ipns/blob/aaf402d/packages/ipns/src/index.ts#L107">packages/ipns/src/index.ts:107</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/ipfs/helia-ipns/blob/e206777/packages/ipns/src/index.ts#L86">packages/ipns/src/index.ts:86</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-index-accordion" open><summary class="tsd-accordion-summary tsd-index-summary">
@@ -36,6 +36,7 @@
 <a href="index.PublishOptions.html#offline" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-1024"></use></svg><span>offline?</span></a>
 <a href="index.PublishOptions.html#onProgress" class="tsd-index-link tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-1024"></use></svg><span>on<wbr/>Progress?</span></a>
 <a href="index.PublishOptions.html#signal" class="tsd-index-link tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-1024"></use></svg><span>signal?</span></a>
+<a href="index.PublishOptions.html#v1Compatible" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-1024"></use></svg><span>v1<wbr/>Compatible?</span></a>
 </div></section></div></details></section></section>
 <section class="tsd-panel-group tsd-member-group">
 <h2>Properties</h2>
@@ -46,7 +47,7 @@
 </div>
 <div class="tsd-comment tsd-typography"></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/ipfs/helia-ipns/blob/aaf402d/packages/ipns/src/index.ts#L111">packages/ipns/src/index.ts:111</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/ipfs/helia-ipns/blob/e206777/packages/ipns/src/index.ts#L90">packages/ipns/src/index.ts:90</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member"><a id="offline" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><code class="tsd-tag ts-flagOptional">Optional</code> <span>offline</span><a href="#offline" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">offline</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
@@ -54,7 +55,7 @@
 </div>
 <div class="tsd-comment tsd-typography"></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/ipfs/helia-ipns/blob/aaf402d/packages/ipns/src/index.ts#L116">packages/ipns/src/index.ts:116</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/ipfs/helia-ipns/blob/e206777/packages/ipns/src/index.ts#L95">packages/ipns/src/index.ts:95</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-is-inherited tsd-is-external"><a id="onProgress" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><code class="tsd-tag ts-flagOptional">Optional</code> <span>on<wbr/>Progress</span><a href="#onProgress" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">on<wbr/>Progress</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">evt</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">)</span></div>
@@ -79,7 +80,16 @@
 <div class="tsd-signature"><span class="tsd-kind-property">signal</span><span class="tsd-signature-symbol">?:</span> <a href="https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal" class="tsd-signature-type external" target="_blank">AbortSignal</a></div><aside class="tsd-sources">
 <p>Inherited from AbortOptions.signal</p>
 <ul>
-<li>Defined in node_modules/@libp2p/interface/dist/src/index.d.ts:569</li></ul></aside></section></section></div>
+<li>Defined in node_modules/@libp2p/interface/dist/src/index.d.ts:569</li></ul></aside></section>
+<section class="tsd-panel tsd-member"><a id="v1Compatible" class="tsd-anchor"></a>
+<h3 class="tsd-anchor-link"><code class="tsd-tag ts-flagOptional">Optional</code> <span>v1<wbr/>Compatible</span><a href="#v1Compatible" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24"><use href="#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">v1<wbr/>Compatible</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">boolean</span></div>
+<div class="tsd-comment tsd-typography"><p>By default a IPNS V1 and a V2 signature is added to every record. Pass
+false here to only add a V2 signature. (default: true)</p>
+</div>
+<div class="tsd-comment tsd-typography"></div><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/ipfs/helia-ipns/blob/e206777/packages/ipns/src/index.ts#L101">packages/ipns/src/index.ts:101</a></li></ul></aside></section></section></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
@@ -102,7 +112,8 @@
 <li><a href="#lifetime" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-1024"></use></svg><span>lifetime</span></a></li>
 <li><a href="#offline" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-1024"></use></svg><span>offline</span></a></li>
 <li><a href="#onProgress" class="tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-1024"></use></svg><span>on<wbr/>Progress</span></a></li>
-<li><a href="#signal" class="tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-1024"></use></svg><span>signal</span></a></li></ul></div></details></div>
+<li><a href="#signal" class="tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-1024"></use></svg><span>signal</span></a></li>
+<li><a href="#v1Compatible" class=""><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-1024"></use></svg><span>v1<wbr/>Compatible</span></a></li></ul></div></details></div>
 <div class="site-menu">
 <nav class="tsd-navigation"><a href="../index.html"><svg class="tsd-kind-icon" viewBox="0 0 24 24"><use href="#icon-1"></use></svg><span>@helia/ipns - v0.0.0</span></a>
 <ul class="tsd-small-nested-navigation" id="tsd-nav-container" data-base="..">
