@@ -35,7 +35,7 @@
     "release": "npm run docs:no-publish && aegir run release && npm run docs -- --exclude packages/interop"
   },
   "devDependencies": {
-    "aegir": "^40.0.8"
+    "aegir": "^41.0.0"
   },
   "type": "module",
   "workspaces": [
