@@ -126,11 +126,19 @@ function toDNSResponse (response: dnsPacket.DecodedPacket): DNSResponse {
         }
       }
 
+      if (!Buffer.isBuffer(a.data[0])) {
+        return {
+          name: a.name,
+          type: txtType,
+          TTL: a.ttl ?? ttl,
+          data: String(a.data[0])
+        }
+      }
+
       return {
         name: a.name,
         type: txtType,
         TTL: a.ttl ?? ttl,
-        // @ts-expect-error we have already checked that a.data is not empty
         data: uint8ArrayToString(a.data[0])
       }
     }) ?? []
