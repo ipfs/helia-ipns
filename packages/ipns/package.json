@@ -173,7 +173,7 @@
     "aegir": "^41.0.0",
     "datastore-core": "^9.0.3",
     "sinon": "^17.0.0",
-    "sinon-ts": "^1.0.0"
+    "sinon-ts": "^2.0.0"
   },
   "browser": {
     "./dist/src/utils/resolve-dns-link.js": "./dist/src/utils/resolve-dns-link.browser.js"
