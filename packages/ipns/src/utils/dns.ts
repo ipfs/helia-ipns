@@ -1,6 +1,6 @@
 import { CodeError } from '@libp2p/interface/errors'
 import * as isIPFS from 'is-ipfs'
-import type { ResolveDnsLinkOptions } from '../index.js'
+import type { DNSResolver, ResolveDnsLinkOptions } from '../index.js'
 
 export interface Question {
   name: string
@@ -59,7 +59,7 @@ export const findTTL = (domain: string, response: DNSResponse): number => {
 
 export const MAX_RECURSIVE_DEPTH = 32
 
-export const recursiveResolveDnslink = async (domain: string, depth: number, resolve: (domain: string, options: ResolveDnsLinkOptions) => Promise<string>, options: ResolveDnsLinkOptions = {}): Promise<string> => {
+export const recursiveResolveDnslink = async (domain: string, depth: number, resolve: DNSResolver, options: ResolveDnsLinkOptions = {}): Promise<string> => {
   if (depth === 0) {
     throw new Error('recursion limit exceeded')
   }
@@ -88,10 +88,14 @@ export const recursiveResolveDnslink = async (domain: string, depth: number, res
   }
 
   const result = dnslinkRecord.replace('dnslink=', '')
-  const domainOrCID = result.split('/')[2]
+  // result is now a `/ipfs/<cid>` or `/ipns/<cid>` string
+  const domainOrCID = result.split('/')[2] // e.g. ["", "ipfs", "<cid>"]
   const isIPFSCID = isIPFS.cid(domainOrCID)
 
-  if (isIPFSCID || depth === 0) {
+  // if the result is a CID, or depth is 1, we've reached the end of the recursion
+  // if depth is 1, another recursive call will be made, but it would throw.
+  // we could return if depth is 1 and allow users to handle, but that may be a breaking change
+  if (isIPFSCID) {
     return result
   }
 
