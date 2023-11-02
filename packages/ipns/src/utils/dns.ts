@@ -1,4 +1,4 @@
-import { CodeError } from '@libp2p/interfaces/errors'
+import { CodeError } from '@libp2p/interface/errors'
 import * as isIPFS from 'is-ipfs'
 import type { ResolveDnsLinkOptions } from '../index.js'
 

@@ -1,8 +1,8 @@
 import { Resolver } from 'node:dns/promises'
-import { CodeError } from '@libp2p/interfaces/errors'
+import { CodeError } from '@libp2p/interface/errors'
 import { MAX_RECURSIVE_DEPTH, recursiveResolveDnslink } from '../utils/dns.js'
 import type { DNSResolver, ResolveDnsLinkOptions } from '../index.js'
-import type { AbortOptions } from '@libp2p/interfaces'
+import type { AbortOptions } from '@libp2p/interface'
 
 export function defaultResolver (): DNSResolver {
   return async (domain: string, options: ResolveDnsLinkOptions = {}): Promise<string> => {

@@ -6,30 +6,11 @@
  * @example
  *
  * ```typescript
- * import { gossipsub } from '@chainsafe/libp2p-gossipsub'
- * import { kadDHT } from '@libp2p/kad-dht'
- * import { createLibp2p } from 'libp2p'
  * import { createHelia } from 'helia'
- * import { ipns, ipnsValidator, ipnsSelector } from '@helia/ipns'
  * import { dht, pubsub } from '@helia/ipns/routing'
- * import { unixfs } from '@helia/unixfs
+ * import { unixfs } from '@helia/unixfs'
  *
- * const libp2p = await createLibp2p({
- *   dht: kadDHT({
- *    validators: {
- *      ipns: ipnsValidator
- *    },
- *    selectors: {
- *      ipns: ipnsSelector
- *    }
- *   }),
- *   pubsub: gossipsub()
- * })
- *
- * const helia = await createHelia({
- *   libp2p,
- *   //.. other options
- * })
+ * const helia = await createHelia()
  * const name = ipns(helia, [
  *   dht(helia),
  *   pubsub(helia)
@@ -104,8 +85,7 @@
  * ```
  */
 
-import { isPeerId, type PeerId } from '@libp2p/interface-peer-id'
-import { CodeError } from '@libp2p/interfaces/errors'
+import { CodeError } from '@libp2p/interface/errors'
 import { logger } from '@libp2p/logger'
 import { peerIdFromString } from '@libp2p/peer-id'
 import { create, marshal, peerIdToRoutingKey, unmarshal } from 'ipns'
@@ -113,15 +93,14 @@ import { ipnsSelector } from 'ipns/selector'
 import { ipnsValidator } from 'ipns/validator'
 import { CID } from 'multiformats/cid'
 import { CustomProgressEvent } from 'progress-events'
-import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
-import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
 import { defaultResolver } from './dns-resolvers/default.js'
 import { localStore, type LocalStore } from './routing/local-store.js'
 import type { IPNSRouting, IPNSRoutingEvents } from './routing/index.js'
 import type { DNSResponse } from './utils/dns.js'
-import type { AbortOptions } from '@libp2p/interfaces'
+import type { AbortOptions } from '@libp2p/interface'
+import type { PeerId } from '@libp2p/interface/peer-id'
 import type { Datastore } from 'interface-datastore'
-import type { IPNSEntry } from 'ipns'
+import type { IPNSRecord } from 'ipns'
 import type { ProgressEvent, ProgressOptions } from 'progress-events'
 
 const log = logger('helia:ipns')
@@ -134,18 +113,18 @@ const DEFAULT_REPUBLISH_INTERVAL_MS = 23 * HOUR
 
 export type PublishProgressEvents =
   ProgressEvent<'ipns:publish:start'> |
-  ProgressEvent<'ipns:publish:success', IPNSEntry> |
+  ProgressEvent<'ipns:publish:success', IPNSRecord> |
   ProgressEvent<'ipns:publish:error', Error>
 
 export type ResolveProgressEvents =
   ProgressEvent<'ipns:resolve:start', unknown> |
-  ProgressEvent<'ipns:resolve:success', IPNSEntry> |
+  ProgressEvent<'ipns:resolve:success', IPNSRecord> |
   ProgressEvent<'ipns:resolve:error', Error>
 
 export type RepublishProgressEvents =
   ProgressEvent<'ipns:republish:start', unknown> |
-  ProgressEvent<'ipns:republish:success', IPNSEntry> |
-  ProgressEvent<'ipns:republish:error', { record: IPNSEntry, err: Error }>
+  ProgressEvent<'ipns:republish:success', IPNSRecord> |
+  ProgressEvent<'ipns:republish:error', { record: IPNSRecord, err: Error }>
 
 export type ResolveDnsLinkProgressEvents =
   ProgressEvent<'dnslink:cache', string> |
@@ -162,6 +141,12 @@ export interface PublishOptions extends AbortOptions, ProgressOptions<PublishPro
    * Only publish to a local datastore (default: false)
    */
   offline?: boolean
+
+  /**
+   * By default a IPNS V1 and a V2 signature is added to every record. Pass
+   * false here to only add a V2 signature. (default: true)
+   */
+  v1Compatible?: boolean
 }
 
 export interface ResolveOptions extends AbortOptions, ProgressOptions<ResolveProgressEvents | IPNSRoutingEvents> {
@@ -208,23 +193,23 @@ export interface IPNS {
    *
    * If the valid is a PeerId, a recursive IPNS record will be created.
    */
-  publish: (key: PeerId, value: CID | PeerId, options?: PublishOptions) => Promise<IPNSEntry>
+  publish(key: PeerId, value: CID | PeerId, options?: PublishOptions): Promise<IPNSRecord>
 
   /**
    * Accepts a public key formatted as a libp2p PeerID and resolves the IPNS record
    * corresponding to that public key until a value is found
    */
-  resolve: (key: PeerId, options?: ResolveOptions) => Promise<CID>
+  resolve(key: PeerId, options?: ResolveOptions): Promise<CID>
 
   /**
    * Resolve a CID from a dns-link style IPNS record
    */
-  resolveDns: (domain: string, options?: ResolveDNSOptions) => Promise<CID>
+  resolveDns(domain: string, options?: ResolveDNSOptions): Promise<CID>
 
   /**
    * Periodically republish all IPNS records found in the datastore
    */
-  republish: (options?: RepublishOptions) => void
+  republish(options?: RepublishOptions): void
 }
 
 export type { IPNSRouting } from './routing/index.js'
@@ -243,7 +228,7 @@ class DefaultIPNS implements IPNS {
     this.localStore = localStore(components.datastore)
   }
 
-  async publish (key: PeerId, value: CID | PeerId, options: PublishOptions = {}): Promise<IPNSEntry> {
+  async publish (key: PeerId, value: CID | PeerId, options: PublishOptions = {}): Promise<IPNSRecord> {
     try {
       let sequenceNumber = 1n
       const routingKey = peerIdToRoutingKey(key)
@@ -255,18 +240,8 @@ class DefaultIPNS implements IPNS {
         sequenceNumber = existingRecord.sequence + 1n
       }
 
-      let str
-
-      if (isPeerId(value)) {
-        str = `/ipns/${value.toString()}`
-      } else {
-        str = `/ipfs/${value.toString()}`
-      }
-
-      const bytes = uint8ArrayFromString(str)
-
       // create record
-      const record = await create(key, bytes, sequenceNumber, options.lifetime ?? DEFAULT_LIFETIME_MS)
+      const record = await create(key, value, sequenceNumber, options.lifetime ?? DEFAULT_LIFETIME_MS, options)
       const marshaledRecord = marshal(record)
 
       await this.localStore.put(routingKey, marshaledRecord, options)
@@ -286,9 +261,8 @@ class DefaultIPNS implements IPNS {
   async resolve (key: PeerId, options: ResolveOptions = {}): Promise<CID> {
     const routingKey = peerIdToRoutingKey(key)
     const record = await this.#findIpnsRecord(routingKey, options)
-    const str = uint8ArrayToString(record.value)
 
-    return this.#resolve(str, options)
+    return this.#resolve(record.value, options)
   }
 
   async resolveDns (domain: string, options: ResolveDNSOptions = {}): Promise<CID> {
@@ -356,7 +330,7 @@ class DefaultIPNS implements IPNS {
     throw new Error('Invalid value')
   }
 
-  async #findIpnsRecord (routingKey: Uint8Array, options: ResolveOptions = {}): Promise<IPNSEntry> {
+  async #findIpnsRecord (routingKey: Uint8Array, options: ResolveOptions = {}): Promise<IPNSRecord> {
     let routers = [
       this.localStore,
       ...this.routers
