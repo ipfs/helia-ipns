@@ -175,7 +175,9 @@ export interface ResolveDNSOptions extends AbortOptions, ProgressOptions<Resolve
 
   /**
    * These resolvers will be used to resolve the dnslink entries, if unspecified node will
-   * fall back to the `dns` module and browsers fall back to querying ipfs.io
+   * fall back to the `dns` module and browsers fall back to querying google/cloudflare DoH
+   *
+   * @see https://github.com/ipfs/helia-ipns/pull/55#discussion_r1270096881
    */
   resolvers?: DNSResolver[]
 }

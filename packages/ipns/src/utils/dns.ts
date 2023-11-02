@@ -97,3 +97,25 @@ export const recursiveResolveDnslink = async (domain: string, depth: number, res
 
   return recursiveResolveDnslink(domainOrCID, depth - 1, resolve, options)
 }
+
+interface DnsResolver {
+  resolveTxt(domain: string): Promise<string[][]>
+}
+
+const DNSLINK_REGEX = /^dnslink=.+$/
+export const resolveFn = async (resolver: DnsResolver, domain: string): Promise<string> => {
+  const records = await resolver.resolveTxt(domain)
+  const dnslinkRecords = records.flat()
+    .filter(record => DNSLINK_REGEX.test(record))
+
+  // we now have dns text entries as an array of strings
+  // only records passing the DNSLINK_REGEX text are included
+  // TODO: support multiple dnslink records
+  const dnslinkRecord = dnslinkRecords[0]
+
+  if (dnslinkRecord == null) {
+    throw new CodeError(`No dnslink records found for domain: ${domain}`, 'ERR_DNSLINK_NOT_FOUND')
+  }
+
+  return dnslinkRecord
+}
