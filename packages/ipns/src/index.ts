@@ -167,7 +167,12 @@ export interface DNSResolver {
   (domain: string, options?: ResolveDnsLinkOptions): Promise<string>
 }
 
-export interface ResolveDNSOptions extends AbortOptions, ProgressOptions<ResolveDnsLinkProgressEvents> {
+export interface ResolveDNSOptions extends AbortOptions, ProgressOptions<ResolveProgressEvents | IPNSRoutingEvents | ResolveDnsLinkProgressEvents> {
+  /**
+   * Do not query the network for the IPNS record (default: false)
+   */
+  offline?: boolean
+
   /**
    * Do not use cached DNS entries (default: false)
    */
@@ -315,7 +320,7 @@ class DefaultIPNS implements IPNS {
     }, options.interval ?? DEFAULT_REPUBLISH_INTERVAL_MS)
   }
 
-  async #resolve (ipfsPath: string, options: any = {}): Promise<CID> {
+  async #resolve (ipfsPath: string, options: ResolveOptions = {}): Promise<CID> {
     const parts = ipfsPath.split('/')
 
     if (parts.length === 3) {
