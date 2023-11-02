@@ -31,14 +31,24 @@ describe('dns resolvers', () => {
       // resolve once
       await resolver('ipfs.io')
 
-      // resolve again, should use the cache
-      await resolver('ipfs.io', {
-        onProgress: (evt) => {
-          if (evt.type.includes('dnslink:cache')) {
-            usedCache = true
+      const makeCall = async (): Promise<void> => {
+        await resolver('ipfs.io', {
+          onProgress: (evt) => {
+            if (evt.type.includes('dnslink:cache')) {
+              usedCache = true
+            }
           }
+        })
+      }
+
+      for (let i = 0; i < 10; i++) {
+        // resolve again, should use the cache
+        // TTL can be pretty low which means this can be flaky if executed more slowly than the TTL
+        await makeCall()
+        if (usedCache) {
+          break
         }
-      })
+      }
 
       expect(usedCache).to.be.true()
     })
@@ -65,6 +75,12 @@ describe('dns resolvers', () => {
       })
 
       expect(usedCache).to.be.false()
+    })
+
+    it(`${name} should abort if signal is aborted`, async () => {
+      const signal = AbortSignal.timeout(1)
+
+      await expect(resolver('ipfs.io', { signal })).to.eventually.be.rejected()
     })
   })
 })
