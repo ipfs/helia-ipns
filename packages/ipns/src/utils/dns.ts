@@ -22,7 +22,7 @@ export interface DNSResponse {
   AD: boolean
   CD: boolean
   Question: Question[]
-  Answer: Answer[]
+  Answer?: Answer[]
 }
 
 export const ipfsPath = (domain: string, response: DNSResponse): string => {
@@ -42,7 +42,7 @@ export const ipfsPath = (domain: string, response: DNSResponse): string => {
 }
 
 export const findDNSLinkAnswer = (domain: string, response: DNSResponse): Answer => {
-  const answer = response.Answer.filter(a => a.data.includes('dnslink=/ipfs') || a.data.includes('dnslink=/ipns')).pop()
+  const answer = response.Answer?.filter(a => a.data.includes('dnslink=/ipfs') || a.data.includes('dnslink=/ipns')).pop()
 
   if (answer == null) {
     throw new CodeError(`No dnslink records found for domain: ${domain}`, 'ERR_DNSLINK_NOT_FOUND')
