@@ -1,4 +1,3 @@
-// import DnsOverHttpResolver from 'dns-over-http-resolver'
 import Resolver from 'dns-over-http-resolver'
 import PQueue from 'p-queue'
 import { CustomProgressEvent } from 'progress-events'
