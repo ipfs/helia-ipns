@@ -1,7 +1,7 @@
 /* eslint-env browser */
 
 import { Buffer } from 'buffer'
-import dnsPacket from 'dns-packet'
+import dnsPacket, { type DecodedPacket } from 'dns-packet'
 import { base64url } from 'multiformats/bases/base64'
 import PQueue from 'p-queue'
 import { CustomProgressEvent } from 'progress-events'
@@ -102,7 +102,7 @@ export function dnsOverHttps (url: string): DNSResolver {
   }
 }
 
-function toDNSResponse (response: dnsPacket.DecodedPacket): DNSResponse {
+function toDNSResponse (response: DecodedPacket): DNSResponse {
   const txtType = 16
 
   return {
