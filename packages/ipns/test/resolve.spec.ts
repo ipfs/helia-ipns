@@ -25,7 +25,7 @@ describe('resolve', () => {
     routing = stubInterface<IPNSRouting>()
     routing.get.throws(new Error('Not found'))
 
-    name = ipns({ datastore }, [routing])
+    name = ipns({ datastore }, { routers: [routing] })
   })
 
   it('should resolve a record', async () => {

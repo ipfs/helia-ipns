@@ -5,16 +5,20 @@
  *
  * @example
  *
+ * With {@link IPNSRouting} routers:
+ *
  * ```typescript
  * import { createHelia } from 'helia'
  * import { dht, pubsub } from '@helia/ipns/routing'
  * import { unixfs } from '@helia/unixfs'
  *
  * const helia = await createHelia()
- * const name = ipns(helia, [
- *   dht(helia),
- *   pubsub(helia)
- * ])
+ * const name = ipns(helia, {
+ *  routers: [
+ *    dht(helia),
+ *    pubsub(helia)
+ *  ]
+ * })
  *
  * // create a public key to publish as an IPNS name
  * const keyInfo = await helia.libp2p.keychain.createKey('my-key')
@@ -32,6 +36,27 @@
  * ```
  *
  * @example
+ *
+ * With default {@link DNSResolver} resolvers:
+ *
+ * ```typescript
+ * import { createHelia } from 'helia'
+ * import { dht, pubsub } from '@helia/ipns/routing'
+ * import { unixfs } from '@helia/unixfs'
+ *
+ * const helia = await createHelia()
+ * const name = ipns(helia, {
+ *  resolvers: [
+ *    dnsOverHttps('https://private-dns-server.me/dns-query'),
+ *  ]
+ * })
+ *
+ * const cid = name.resolveDns('some-domain-with-dnslink-entry.com')
+ * ```
+ *
+ * @example
+ *
+ * Calling `resolveDns` with the `@helia/ipns` instance:
  *
  * ```typescript
  * // resolve a CID from a TXT record in a DNS zone file, using the default
@@ -376,7 +401,12 @@ class DefaultIPNS implements IPNS {
   }
 }
 
-export function ipns (components: IPNSComponents, routers: IPNSRouting[] = [], resolvers: DNSResolver[] = []): IPNS {
+export interface IPNSOptions {
+  routers?: IPNSRouting[]
+  resolvers?: DNSResolver[]
+}
+
+export function ipns (components: IPNSComponents, { routers = [], resolvers = [] }: IPNSOptions): IPNS {
   return new DefaultIPNS(components, routers, resolvers)
 }
 
