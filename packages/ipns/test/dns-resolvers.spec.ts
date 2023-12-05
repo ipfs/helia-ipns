@@ -80,7 +80,7 @@ describe('dns resolvers', () => {
     it(`${name} should abort if signal is aborted`, async () => {
       const signal = AbortSignal.timeout(1)
 
-      await expect(resolver('ipfs.io', { signal })).to.eventually.be.rejected()
+      await expect(resolver('ipfs.io', { nocache: true, signal })).to.eventually.be.rejected()
     })
   })
 })
