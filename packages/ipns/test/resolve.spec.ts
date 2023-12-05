@@ -75,23 +75,6 @@ describe('resolve', () => {
     expect(resolvedValue.toString()).to.equal(cid.toV1().toString())
   })
 
-  it('should resolve /ipns/tableflip.io', async function () {
-    const domain = 'tableflip.io'
-
-    try {
-      const resolvedValue = await name.resolveDns(domain)
-
-      expect(resolvedValue).to.be.an.instanceOf(CID)
-    } catch (err: any) {
-      // happens when running tests offline
-      if (err.message.includes(`ECONNREFUSED ${domain}`) === true) {
-        return this.skip()
-      }
-
-      throw err
-    }
-  })
-
   it('should emit progress events', async function () {
     const onProgress = Sinon.stub()
     const key = await createEd25519PeerId()
