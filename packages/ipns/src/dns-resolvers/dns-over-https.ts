@@ -102,21 +102,16 @@ export function dnsOverHttps (url: string): DNSResolver {
   }
 }
 
-function toDNSResponse (response: dnsPacket.Packet): DNSResponse {
+function toDNSResponse (response: dnsPacket.DecodedPacket): DNSResponse {
   const txtType = 16
 
   return {
     Status: 0,
-    // @ts-expect-error field is missing from types
-    TC: Boolean(response.flag_tc) || false,
-    // @ts-expect-error field is missing from types
-    RD: Boolean(response.flag_rd) || false,
-    // @ts-expect-error field is missing from types
-    RA: Boolean(response.flag_ra) || false,
-    // @ts-expect-error field is missing from types
-    AD: Boolean(response.flag_ad) || false,
-    // @ts-expect-error field is missing from types
-    CD: Boolean(response.flag_cd) || false,
+    TC: response.flag_tc ?? false,
+    RD: response.flag_rd ?? false,
+    RA: response.flag_ra ?? false,
+    AD: response.flag_ad ?? false,
+    CD: response.flag_cd ?? false,
     Question: response.questions?.map(q => ({
       name: q.name,
       type: txtType
@@ -131,11 +126,19 @@ function toDNSResponse (response: dnsPacket.Packet): DNSResponse {
         }
       }
 
+      if (!Buffer.isBuffer(a.data[0])) {
+        return {
+          name: a.name,
+          type: txtType,
+          TTL: a.ttl ?? ttl,
+          data: String(a.data[0])
+        }
+      }
+
       return {
         name: a.name,
         type: txtType,
         TTL: a.ttl ?? ttl,
-        // @ts-expect-error we have already checked that a.data is not empty
         data: uint8ArrayToString(a.data[0])
       }
     }) ?? []

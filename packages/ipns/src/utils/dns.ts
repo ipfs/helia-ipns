@@ -1,6 +1,6 @@
 import { CodeError } from '@libp2p/interface/errors'
 import * as isIPFS from 'is-ipfs'
-import type { ResolveDnsLinkOptions } from '../index.js'
+import type { DNSResolver, ResolveDnsLinkOptions } from '../index.js'
 
 export interface Question {
   name: string
@@ -22,7 +22,7 @@ export interface DNSResponse {
   AD: boolean
   CD: boolean
   Question: Question[]
-  Answer: Answer[]
+  Answer?: Answer[]
 }
 
 export const ipfsPath = (domain: string, response: DNSResponse): string => {
@@ -42,7 +42,7 @@ export const ipfsPath = (domain: string, response: DNSResponse): string => {
 }
 
 export const findDNSLinkAnswer = (domain: string, response: DNSResponse): Answer => {
-  const answer = response.Answer.filter(a => a.data.includes('dnslink=/ipfs') || a.data.includes('dnslink=/ipns')).pop()
+  const answer = response.Answer?.filter(a => a.data.includes('dnslink=/ipfs') || a.data.includes('dnslink=/ipns')).pop()
 
   if (answer == null) {
     throw new CodeError(`No dnslink records found for domain: ${domain}`, 'ERR_DNSLINK_NOT_FOUND')
@@ -59,7 +59,7 @@ export const findTTL = (domain: string, response: DNSResponse): number => {
 
 export const MAX_RECURSIVE_DEPTH = 32
 
-export const recursiveResolveDnslink = async (domain: string, depth: number, resolve: (domain: string, options: ResolveDnsLinkOptions) => Promise<string>, options: ResolveDnsLinkOptions = {}): Promise<string> => {
+export const recursiveResolveDnslink = async (domain: string, depth: number, resolve: DNSResolver, options: ResolveDnsLinkOptions = {}): Promise<string> => {
   if (depth === 0) {
     throw new Error('recursion limit exceeded')
   }
@@ -88,12 +88,38 @@ export const recursiveResolveDnslink = async (domain: string, depth: number, res
   }
 
   const result = dnslinkRecord.replace('dnslink=', '')
-  const domainOrCID = result.split('/')[2]
+  // result is now a `/ipfs/<cid>` or `/ipns/<cid>` string
+  const domainOrCID = result.split('/')[2] // e.g. ["", "ipfs", "<cid>"]
   const isIPFSCID = isIPFS.cid(domainOrCID)
 
-  if (isIPFSCID || depth === 0) {
+  // if the result is a CID, or depth is 1, we've reached the end of the recursion
+  // if depth is 1, another recursive call will be made, but it would throw.
+  // we could return if depth is 1 and allow users to handle, but that may be a breaking change
+  if (isIPFSCID) {
     return result
   }
 
   return recursiveResolveDnslink(domainOrCID, depth - 1, resolve, options)
+}
+
+interface DnsResolver {
+  resolveTxt(domain: string): Promise<string[][]>
+}
+
+const DNSLINK_REGEX = /^dnslink=.+$/
+export const resolveFn = async (resolver: DnsResolver, domain: string): Promise<string> => {
+  const records = await resolver.resolveTxt(domain)
+  const dnslinkRecords = records.flat()
+    .filter(record => DNSLINK_REGEX.test(record))
+
+  // we now have dns text entries as an array of strings
+  // only records passing the DNSLINK_REGEX text are included
+  // TODO: support multiple dnslink records
+  const dnslinkRecord = dnslinkRecords[0]
+
+  if (dnslinkRecord == null) {
+    throw new CodeError(`No dnslink records found for domain: ${domain}`, 'ERR_DNSLINK_NOT_FOUND')
+  }
+
+  return dnslinkRecord
 }
