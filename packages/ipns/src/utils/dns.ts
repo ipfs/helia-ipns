@@ -25,9 +25,7 @@ export interface DNSResponse {
   Answer?: Answer[]
 }
 
-export const ipfsPath = (domain: string, response: DNSResponse): string => {
-  const answer = findDNSLinkAnswer(domain, response)
-
+export const ipfsPathForAnswer = (answer: Answer): string => {
   let data = answer.data
 
   if (data.startsWith('"')) {
@@ -41,6 +39,15 @@ export const ipfsPath = (domain: string, response: DNSResponse): string => {
   return data.replace('dnslink=', '')
 }
 
+export const ipfsPathAndAnswer = (domain: string, response: DNSResponse): { ipfsPath: string, answer: Answer } => {
+  const answer = findDNSLinkAnswer(domain, response)
+
+  return {
+    ipfsPath: ipfsPathForAnswer(answer),
+    answer
+  }
+}
+
 export const findDNSLinkAnswer = (domain: string, response: DNSResponse): Answer => {
   const answer = response.Answer?.filter(a => a.data.includes('dnslink=/ipfs') || a.data.includes('dnslink=/ipns')).pop()
 
@@ -49,12 +56,6 @@ export const findDNSLinkAnswer = (domain: string, response: DNSResponse): Answer
   }
 
   return answer
-}
-
-export const findTTL = (domain: string, response: DNSResponse): number => {
-  const answer = findDNSLinkAnswer(domain, response)
-
-  return answer.TTL
 }
 
 export const MAX_RECURSIVE_DEPTH = 32

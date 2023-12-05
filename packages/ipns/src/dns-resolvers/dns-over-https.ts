@@ -6,7 +6,7 @@ import { base64url } from 'multiformats/bases/base64'
 import PQueue from 'p-queue'
 import { CustomProgressEvent } from 'progress-events'
 import { toString as uint8ArrayToString } from 'uint8arrays/to-string'
-import { type DNSResponse, findTTL, ipfsPath, MAX_RECURSIVE_DEPTH, recursiveResolveDnslink } from '../utils/dns.js'
+import { type DNSResponse, MAX_RECURSIVE_DEPTH, recursiveResolveDnslink, ipfsPathAndAnswer } from '../utils/dns.js'
 import { TLRU } from '../utils/tlru.js'
 import type { ResolveDnsLinkOptions, DNSResolver } from '../index.js'
 
@@ -81,11 +81,11 @@ export function dnsOverHttps (url: string): DNSResolver {
 
       options.onProgress?.(new CustomProgressEvent<DNSResponse>('dnslink:answer', { detail: json }))
 
-      const result = ipfsPath(fqdn, json)
+      const { ipfsPath, answer } = ipfsPathAndAnswer(fqdn, json)
 
-      cache.set(query, result, findTTL(fqdn, json) ?? ttl)
+      cache.set(query, ipfsPath, answer.TTL ?? ttl)
 
-      return json
+      return ipfsPath
     }, {
       signal: options.signal
     })
@@ -94,7 +94,7 @@ export function dnsOverHttps (url: string): DNSResolver {
       throw new Error('No DNS response received')
     }
 
-    return ipfsPath(fqdn, response)
+    return response
   }
 
   return async (domain: string, options: ResolveDnsLinkOptions = {}) => {
