@@ -229,12 +229,12 @@ class DefaultIPNS implements IPNS {
   private readonly routers: IPNSRouting[]
   private readonly localStore: LocalStore
   private timeout?: ReturnType<typeof setTimeout>
-  private readonly defaultResolver: DNSResolver
+  private readonly defaultResolvers: DNSResolver[]
 
-  constructor (components: IPNSComponents, routers: IPNSRouting[] = []) {
+  constructor (components: IPNSComponents, routers: IPNSRouting[] = [], resolvers: DNSResolver[] = []) {
     this.routers = routers
     this.localStore = localStore(components.datastore)
-    this.defaultResolver = defaultResolver()
+    this.defaultResolvers = resolvers.length > 0 ? resolvers : [defaultResolver()]
   }
 
   async publish (key: PeerId, value: CID | PeerId, options: PublishOptions = {}): Promise<IPNSRecord> {
@@ -275,7 +275,7 @@ class DefaultIPNS implements IPNS {
   }
 
   async resolveDns (domain: string, options: ResolveDNSOptions = {}): Promise<CID> {
-    const resolvers = options.resolvers ?? [this.defaultResolver]
+    const resolvers = options.resolvers ?? this.defaultResolvers
 
     const dnslink = await Promise.any(
       resolvers.map(async resolver => resolver(domain, options))
@@ -376,8 +376,8 @@ class DefaultIPNS implements IPNS {
   }
 }
 
-export function ipns (components: IPNSComponents, routers: IPNSRouting[] = []): IPNS {
-  return new DefaultIPNS(components, routers)
+export function ipns (components: IPNSComponents, routers: IPNSRouting[] = [], resolvers: DNSResolver[] = []): IPNS {
+  return new DefaultIPNS(components, routers, resolvers)
 }
 
 export { ipnsValidator }
