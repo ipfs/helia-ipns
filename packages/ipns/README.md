@@ -13,47 +13,114 @@
 
 > An implementation of IPNS for Helia
 
-## Table of contents <!-- omit in toc -->
+# About
 
-- [Install](#install)
-  - [Browser `<script>` tag](#browser-script-tag)
-- [API Docs](#api-docs)
-- [License](#license)
-- [Contribute](#contribute)
+IPNS operations using a Helia node
 
-## Install
+## Example
 
-```console
-$ npm i @helia/ipns
+With IPNSRouting routers:
+
+```typescript
+import { createHelia } from 'helia'
+import { ipns } from '@helia/ipns'
+import { dht, pubsub } from '@helia/ipns/routing'
+import { unixfs } from '@helia/unixfs'
+
+const helia = await createHelia()
+const name = ipns(helia, {
+ routers: [
+   dht(helia),
+   pubsub(helia)
+ ]
+})
+
+// create a public key to publish as an IPNS name
+const keyInfo = await helia.libp2p.keychain.createKey('my-key')
+const peerId = await helia.libp2p.keychain.exportPeerId(keyInfo.name)
+
+// store some data to publish
+const fs = unixfs(helia)
+const cid = await fs.add(Uint8Array.from([0, 1, 2, 3, 4]))
+
+// publish the name
+await name.publish(peerId, cid)
+
+// resolve the name
+const cid = name.resolve(peerId)
 ```
 
-### Browser `<script>` tag
+## Example
 
-Loading this module through a script tag will make it's exports available as `HeliaIpns` in the global namespace.
+With default DNSResolver resolvers:
 
-```html
-<script src="https://unpkg.com/@helia/ipns/dist/index.min.js"></script>
+```typescript
+import { createHelia } from 'helia'
+import { ipns } from '@helia/ipns'
+import { unixfs } from '@helia/unixfs'
+import { dnsOverHttps } from '@helia/ipns/dns-resolvers'
+
+const helia = await createHelia()
+const name = ipns(helia, {
+ resolvers: [
+   dnsOverHttps('https://private-dns-server.me/dns-query'),
+ ]
+})
+
+const cid = name.resolveDns('some-domain-with-dnslink-entry.com')
 ```
 
-## API Docs
+## Example
 
-- <https://ipfs.github.io/helia-ipns/modules/_helia_ipns.html>
+Calling `resolveDns` with the `@helia/ipns` instance:
 
-## License
+```typescript
+// resolve a CID from a TXT record in a DNS zone file, using the default
+// resolver for the current platform eg:
+// > dig _dnslink.ipfs.io TXT
+// ;; ANSWER SECTION:
+// _dnslink.ipfs.io.          60     IN      TXT     "dnslink=/ipns/website.ipfs.io"
+// > dig _dnslink.website.ipfs.io TXT
+// ;; ANSWER SECTION:
+// _dnslink.website.ipfs.io.  60     IN      TXT     "dnslink=/ipfs/QmWebsite"
 
-Licensed under either of
+const cid = name.resolveDns('ipfs.io')
 
-- Apache 2.0, ([LICENSE-APACHE](LICENSE-APACHE) / <http://www.apache.org/licenses/LICENSE-2.0>)
-- MIT ([LICENSE-MIT](LICENSE-MIT) / <http://opensource.org/licenses/MIT>)
+console.info(cid)
+// QmWebsite
+```
 
-## Contribute
+## Example
 
-Contributions welcome! Please check out [the issues](https://github.com/ipfs/helia-ipns/issues).
+This example uses the Mozilla provided RFC 1035 DNS over HTTPS service. This
+uses binary DNS records so requires extra dependencies to process the
+response which can increase browser bundle sizes.
 
-Also see our [contributing document](https://github.com/ipfs/community/blob/master/CONTRIBUTING_JS.md) for more information on how we work, and about contributing in general.
+If this is a concern, use the DNS-JSON-Over-HTTPS resolver instead.
 
-Please be aware that all interactions related to this repo are subject to the IPFS [Code of Conduct](https://github.com/ipfs/community/blob/master/code-of-conduct.md).
+```typescript
+// use DNS-Over-HTTPS
+import { dnsOverHttps } from '@helia/ipns/dns-resolvers'
 
-Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
+const cid = name.resolveDns('ipfs.io', {
+  resolvers: [
+    dnsOverHttps('https://mozilla.cloudflare-dns.com/dns-query')
+  ]
+})
+```
 
-[![](https://cdn.rawgit.com/jbenet/contribute-ipfs-gif/master/img/contribute.gif)](https://github.com/ipfs/community/blob/master/CONTRIBUTING.md)
+## Example
+
+DNS-JSON-Over-HTTPS resolvers use the RFC 8427 `application/dns-json` and can
+result in a smaller browser bundle due to the response being plain JSON.
+
+```typescript
+// use DNS-JSON-Over-HTTPS
+import { dnsJsonOverHttps } from '@helia/ipns/dns-resolvers'
+
+const cid = name.resolveDns('ipfs.io', {
+  resolvers: [
+    dnsJsonOverHttps('https://mozilla.cloudflare-dns.com/dns-query')
+  ]
+})
+```
